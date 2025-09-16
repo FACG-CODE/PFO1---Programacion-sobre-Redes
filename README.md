@@ -2,7 +2,7 @@
 
 ### Instrucciones
 1. Ejecutar el archivo "ejecutar_sockets.bat".
-2. Se abriran tres terminales, uno para el script del servidor y otro para el cliente, y se ejecutara la prueba de manera automatica, finalmente se cerrara la conexion con el mensaje "éxito".
+2. Se abriran tres terminales, uno para el script del servidor, otro para el cliente y el tercero para finalizar la prueba. Luego se ejecutara la prueba de manera automatica, finalmente se cerrara la conexion con el mensaje "éxito".
 
 # Alternativa
 1. Abrir dos terminales y posicionar en la carpeta 'src' con "cd <ruta>"
