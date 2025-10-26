@@ -1,4 +1,5 @@
 import socket
+import threading
 from persistencia import inicializar_db
 from persistencia import guardar_mensaje
 from datetime import datetime
@@ -14,17 +15,19 @@ def ejecutar_servidor():
     # Inicializar la base de datos
     inicializar_db()
     if socket_servidor is None: 
+        print("No se pudo iniciar el servidor.")
         return # Salir si no se pudo inicializar el socket
     print(f"Servidor escuchando en {HOST}:{PORT}")
     try:
         while True:
             # Aceptar una conexion
             conn, addr = socket_servidor.accept()
-            with conn:
-                # Procesar la conexion del cliente
-                procesar_cliente(conn, addr)
+            # Procesar la conexion del cliente en un hilo separado
+            hilo = threading.Thread(target=procesar_cliente, args=(conn, addr))
+            # Iniciar el hilo
+            hilo.start()
     except Exception as e:
-        print(f"Error al establecer conexión con el servidor: {e}")
+        print(f"Error: {e}")
     finally:
         socket_servidor.close()
 
@@ -47,22 +50,34 @@ def inicializar_socket():
 def procesar_cliente(conn, addr):
     print(f"Conexion establecida desde {addr}")
     while True:
+        respuesta = ""
         mensaje = conn.recv(1024).decode("utf-8")
         # Guardar el contenido, la fecha y hora actual, y la IP del cliente en la base de datos
         fecha_evento = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        if mensaje == "éxito":
-            print("Terminando la conexión.")
-            respuesta = f"Conexión terminada por el cliente: <{fecha_evento}>"
-            conn.send(respuesta.encode("utf-8"))
-            break
         try:
-            # Guardar el mensaje
-            guardar_mensaje(mensaje, fecha_evento, addr[0])
-            # Enviar respuesta al cliente
-            respuesta = f"Mensaje recibido: <{fecha_evento}>" 
-            conn.send(respuesta.encode("utf-8"))
+            if not mensaje:
+                print("Mensaje vacío recibido.")
+                # Enviar respuesta al cliente
+                respuesta = "Mensaje vacío recibido."
+                conn.send(respuesta.encode("utf-8"))
+            elif mensaje == "éxito" or mensaje == "exito" or mensaje == "EXITO" or mensaje == "ÉXITO":
+                print("Terminando la conexión.")
+                # Enviar respuesta al cliente
+                respuesta = "Conexión terminada"
+                conn.send(respuesta.encode("utf-8"))
+                print(f"Conexion cerrada desde {addr}")
+                conn.close()
+                break
+            else:
+                print(f"Mensaje recibido desde: {addr}: <{fecha_evento}>")
+                # Guardar el mensaje
+                guardar_mensaje(mensaje, fecha_evento, addr[0])
+                # Enviar respuesta al cliente
+                respuesta = f"Mensaje recibido y almacenado con éxito: <{fecha_evento}>" 
+                conn.send(respuesta.encode("utf-8"))
         except Exception as e:
-            print(f"Error en la base de datos: {e}")
+            print(f"Error: {e}")
             conn.send("Error al guardar el mensaje en la base de datos.".encode("utf-8"))
+            
 
 ejecutar_servidor() # Ejecutar el servidor al iniciar el script
